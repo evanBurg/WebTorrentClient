@@ -1,11 +1,26 @@
 {
   "name": "music-torrenter",
   "version": "0.1.0",
+  "homepage": "https://evenburgers.com/kevtorrent",
   "private": true,
   "dependencies": {
+    "cors": "^2.8.5",
+    "dexie": "^2.0.4",
+    "express": "^4.17.1",
+    "file-saver": "^2.0.2",
+    "json-stringify-safe": "^5.0.1",
+    "jszip": "^3.2.2",
+    "onsenui": "^2.10.10",
+    "parse-torrent": "^7.0.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-scripts": "3.0.1"
+    "react-onsenui": "^1.11.2",
+    "react-scripts": "3.0.1",
+    "react-sweet-progress": "^1.1.2",
+    "rutracker-api-2": "^1.10.0",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
+    "webtorrent-hybrid": "^3.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
