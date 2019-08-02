@@ -58,8 +58,7 @@ class Home extends React.Component {
     );
   };
 
-  timeConversion = (millisec) => {
-
+  timeConversion = millisec => {
     var seconds = (millisec / 1000).toFixed(1);
 
     var minutes = (millisec / (1000 * 60)).toFixed(1);
@@ -69,60 +68,67 @@ class Home extends React.Component {
     var days = (millisec / (1000 * 60 * 60 * 24)).toFixed(1);
 
     if (seconds < 60) {
-        return seconds + " Sec";
+      return seconds + " Sec";
     } else if (minutes < 60) {
-        return minutes + " Min";
+      return minutes + " Min";
     } else if (hours < 24) {
-        return hours + " Hrs";
+      return hours + " Hrs";
     } else {
-        return days + " Days"
+      return days + " Days";
     }
-}
+  };
 
   render() {
     return (
-      <Page
-        renderToolbar={() => this.renderToolbar("Home")}
-        renderFixed={this.renderFab}
-      >
-        <h1 style={{ textAlign: "center" }}>Kev Torrent Client</h1>
-        <Context.Consumer>
-          {context => (
-            <Row
-              verticalAlign="center"
-              style={{ justifyContent: "space-evenly", alignItems: "center" }}
-            >
-              <Col
-                onClick={() => this.addTorrent(context)}
+      <Page renderToolbar={() => this.renderToolbar("Home")}>
+        <List>
+          <h1 style={{ textAlign: "center" }}>Kev Torrent Client</h1>
+          <Context.Consumer>
+            {context => (
+              <Row
+                verticalAlign="center"
                 style={{
                   justifyContent: "space-evenly",
-                  alignItems: "center",
-                  textAlign: "center"
+                  alignItems: "center"
                 }}
               >
-                <IconButton
-                  icon="md-plus-circle"
-                  text="Add Torrent"
-                  color="#4CAF50"
-                />
-              </Col>
-              <Col
-                onClick={() => context.socket.emit("removeAll")}
-                style={{
-                  justifyContent: "space-evenly",
-                  alignItems: "center",
-                  textAlign: "center"
-                }}
-              >
-                <IconButton icon="md-refresh" text="Remove Torrents" color="#F44336" />
-              </Col>
-            </Row>
-          )}
-        </Context.Consumer>
+                <Col
+                  onClick={() => this.addTorrent(context)}
+                  style={{
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    textAlign: "center"
+                  }}
+                >
+                  <IconButton
+                    icon="md-plus-circle"
+                    text="Add Torrent"
+                    color="#4CAF50"
+                  />
+                </Col>
+                <Col
+                  onClick={() => context.socket.emit("restart")}
+                  style={{
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    textAlign: "center"
+                  }}
+                >
+                  <IconButton
+                    icon="md-refresh"
+                    text="Restart Server"
+                    color="#F44336"
+                  />
+                </Col>
+              </Row>
+            )}
+          </Context.Consumer>
+        </List>
         <Context.Consumer>
           {context => (
             <List
               renderHeader={() => <ListHeader>Torrents</ListHeader>}
+              style={{ maxHeight: "-webkit-fill-available", overflowY: "auto" }}
               dataSource={context.torrents}
               renderRow={(torrent, idx) => {
                 return (
@@ -173,7 +179,9 @@ class Home extends React.Component {
                             </Col>
                           </Row>
                           <Row style={{ marginTop: 10 }}>
-                            <Col>{this.timeConversion(torrent.timeRemaining)}</Col>
+                            <Col>
+                              {this.timeConversion(torrent.timeRemaining)}
+                            </Col>
                           </Row>
                         </React.Fragment>
                       ) : (

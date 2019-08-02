@@ -1,5 +1,6 @@
 const fs = require("fs");
 const express = require("express");
+const { exec } = require('child_process');
 const bodyParser = require("body-parser");
 const RutrackerAPI = new (require("rutracker-api-2"))();
 const parseTorrent = require("parse-torrent");
@@ -21,6 +22,25 @@ const options = {
   cert: fs.readFileSync("./chain.pem")
 };
 let client = new WebTorrent();
+let previousTorrents = [];
+
+validTorrent = torrentIdentifier => {
+  let invalid = true;
+  try {
+    let testClient = new WebTorrent();
+    testClient.on('error', () => {
+      invalid =  false;
+    })
+    testClient.add(torrentIdentifier)
+    
+    setTimeout(() => {if(invalid !== false) invalid = true; testClient.destroy();}, 2000);
+  } catch (e) {
+    invalid = false
+  } finally {
+    return invalid;
+  }
+  return invalid;
+};
 
 app.use(serverRoot, express.static(path.join(__dirname, "build")));
 
@@ -30,17 +50,16 @@ app.get(serverRoot, function(req, res) {
 
 search = (req, res) => {
   RutrackerAPI.login(username, password)
-  .then(() => RutrackerAPI.search(req.query.query, "seeds", false))
-  .then(results => { 
-    console.log(results);
-    res.send(results)
-   })
-  .catch(err => {
-    RutrackerAPI.getCaptcha().then(captcha => {
-      res.send(captcha)
+    .then(() => RutrackerAPI.search(req.query.query, "seeds", false))
+    .then(results => {
+      res.send(results);
     })
-  });
-}
+    .catch(err => {
+      RutrackerAPI.getCaptcha().then(captcha => {
+        res.send(captcha);
+      });
+    });
+};
 
 app.get(serverRoot + "/search", search);
 
@@ -51,9 +70,13 @@ app.get(serverRoot + "/addTorrent", (req, res) => {
       const ws = fs.createWriteStream("./sample.torrent");
       file.pipe(ws);
       file.on("end", () => {
-        client.add(path.join("./sample.torrent"))
-        //fs.unlink(path.join("./sample.torrent"));
-        res.send('success');
+        if (validTorrent(path.join("./sample.torrent"))) {
+          client.add(path.join("./sample.torrent"));
+          //fs.unlink(path.join("./sample.torrent"));
+          res.send("success");
+        } else {
+          res.status(400).send("fail");
+        }
       });
     });
 });
@@ -98,8 +121,12 @@ fileData = file => {
 io2.on("connection", function(socket) {
   socket.on("addTorrent", magnet => {
     try {
-      client.add(magnet);
-      socket.emit("torrents", client.torrents.map(torrentData));
+      if (validTorrent(magnet)) {
+        client.add(magnet);
+        socket.emit("torrents", client.torrents.map(torrentData));
+      } else {
+        socket.emit("fail");
+      }
     } catch (e) {
       console.log(e);
     }
@@ -145,9 +172,36 @@ io2.on("connection", function(socket) {
       socket.emit("file", { name: file.name, buffer });
     });
   });
+  socket.on("restart", () => {
+    exec("pm2 restart kevtorrent")
+  })
   socket.on("removeAll", () => {
     this.client.torrents.forEach(torrent => {
       torrent.destroy();
     });
   });
 });
+
+function saveTorrents() {
+  if (client && client.torrents.length > 0) {
+    let magnets = client.torrents.map(torrent => torrent.magnetURI);
+    fs.writeFileSync("./torrents.json",JSON.stringify(magnets, null, 2), 'utf8');
+  }
+};
+
+loadTorrents = () => {
+  try {
+    let magnets = JSON.parse(fs.readFileSync("./torrents.json"));
+    magnets.forEach(torrent => {
+      if (validTorrent(torrent)) client.add(torrent);
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+client.on("error", () => {
+  loadTorrents();
+});
+loadTorrents();
+setInterval(saveTorrents, 1000);

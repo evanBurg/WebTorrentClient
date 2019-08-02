@@ -10,6 +10,8 @@ import {
   ProgressBar
 } from "react-onsenui";
 
+import ons from 'onsenui'
+
 class AddTorrents extends Component {
   constructor(props) {
     super(props);
@@ -47,7 +49,11 @@ class AddTorrents extends Component {
   addTorrent = async id => {
     this.setState({ loading: true });
 
-    await fetch(`http://evenburgers.com/kevtorrent/addTorrent?id=${id}`);
+    let res = await fetch(`http://evenburgers.com/kevtorrent/addTorrent?id=${id}`);
+
+    if(!res.ok){
+        ons.notification.alert('Sorry! The torrent you tried to add was invalid.');
+    }
 
     this.props.setTab(0);
 

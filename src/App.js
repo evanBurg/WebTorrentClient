@@ -1,9 +1,10 @@
 import React from "react";
-import { Page, Tabbar, Tab, Navigator } from "react-onsenui";
+import { Page, Tabbar, Tab, Navigator, Dialog } from "react-onsenui";
 import Home from "./Home";
 import AddTorrents from "./AddTorrents";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import ons from 'onsenui'
 import io from "socket.io-client";
 const AppContext = React.createContext();
 class Tabs extends React.Component {
@@ -20,7 +21,7 @@ class Tabs extends React.Component {
         tab: <Tab key="home" label="Home" icon="ion-ios-home" />
       },
       {
-        content: <AddTorrents key="torrents" setTab={this.setIndex} navigator={this.props.navigator} socket={this.props.socket} active={active === 0} tabbar={tabbar} />,
+        content: <AddTorrents key="torrents" setTab={this.setIndex} showError={this.props.showError} navigator={this.props.navigator} socket={this.props.socket} active={active === 0} tabbar={tabbar} />,
         tab: <Tab key="plants" label="Add Torrents" icon="ion-ios-magnet" />
       }
     ];
@@ -41,7 +42,7 @@ class App extends React.Component {
   state = {
     torrents: [],
     socket: io(server),
-    showError: false
+    showError: false,
   };
 
   getData = async torrents => {
@@ -96,6 +97,7 @@ class App extends React.Component {
     this.state.socket.on("torrents", torrents => this.getData(torrents));
     this.state.socket.on("files", this.downloadFiles);
     this.state.socket.on("file", this.downloadFile);
+    this.state.socket.on("fail", () => ons.notification.alert('Sorry! The torrent you tried to add was invalid.'));
   }
 
   componentDidCatch(error, info) {
@@ -109,22 +111,15 @@ class App extends React.Component {
     route.props = route.props || {};
     route.props.navigator = navigator;
     route.props.socket = this.state.socket;
+    route.props.showError = () => this.setState({showError: true})
 
     return React.createElement(route.comp, route.props);
   };
 
+  onCancel = () => this.setState({showError: false})
+
   render() {
     let { torrents } = this.state;
-
-    if (this.state.showError) {
-      return (
-        <div>
-          <h1>Something bad happened</h1>
-          <p>{this.state.error.error}</p>
-          <p>{this.state.error.info}</p>
-        </div>
-      );
-    }
 
     return (
       <AppContext.Provider
@@ -136,6 +131,13 @@ class App extends React.Component {
           downloadFile: this.getFile
         }}
       >
+        <Dialog onCancel={this.onCancel}
+          isOpen={this.state.showError}
+          style={{height: 250}}  cancelable>
+          <Page>
+            Sorry! The torrent you tried to add was invalid.
+          </Page>
+          </Dialog>
         <Navigator
           initialRoute={{ comp: Tabs, props: { key: "tabs" } }}
           renderPage={this.renderPage}
