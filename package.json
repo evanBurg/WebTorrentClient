@@ -5,7 +5,7 @@
   "private": true,
   "dependencies": {
     "cors": "^2.8.5",
-    "dexie": "^2.0.4",
+    "dexie": "^3.2.2",
     "express": "^4.17.1",
     "file-saver": "^2.0.2",
     "json-stringify-safe": "^5.0.1",
